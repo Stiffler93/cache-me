@@ -1,0 +1,28 @@
+{
+  "name": "dynamic-promise",
+  "version": "1.0.0",
+  "description": "dynamic-promises is an addon to promises that allows to more conveniently cache with pre-loading and lazy-loading, and opt-in background updates and cache invalidation.",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "test": "node --loader tsx --test src/**/*.test.ts"
+  },
+  "keywords": [
+    "promises",
+    "cache"
+  ],
+  "author": "Stefan Sonntag",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/object-hash": "^3.0.4",
+    "ts-node": "^10.9.1",
+    "tsx": "^3.13.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "object-hash": "^3.0.0"
+  }
+}
