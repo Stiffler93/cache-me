@@ -1,5 +1,6 @@
 export type AnyFunction = (...p: any[]) => any;
 export type TypedFunction<Params, Value> = (p: Params) => Value;
+export type Closure<Value> = () => Value;
 
 export type ExpirationConfig = {
     ttl: number;
@@ -17,16 +18,16 @@ export type Config = {
     autoRefresh?: RefreshConfig;
 }
 
-export type Entry<Params, Value> = {
-    value: () => Value;
-    params: Params;
+export type Entry<ReturnValue> = {
+    value: () => ReturnValue;
+    fetchFn: Closure<ReturnValue>,
+    key: string;
     expirationTimeout?: NodeJS.Timeout;
     refreshInterval?: NodeJS.Timeout;
 }
-export type Cache<Params, Value> = Map<string, Entry<Params, Value>>;
+export type Cache<ReturnValue> = Map<string, Entry<ReturnValue>>;
 
-export type EntryContext<Params, Value> = {
-    cache: Cache<Params, Value>;
+export type EntryContext<ReturnValue> = {
+    cache: Cache<ReturnValue>;
     config: Config;
-    fetchFn: TypedFunction<Params, Value>;
 }
