@@ -34,7 +34,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         this.config = config;
     }
     
-    public retrieve(key: string): Cached<ReturnValue> | undefined {
+    public async retrieve(key: string): Promise<Cached<ReturnValue> | undefined> {
         const entry = this.cache.get(key);
 
         if (entry) {
@@ -46,22 +46,22 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         return undefined;
     };
     
-    public persist({key, fetchFn}: PersistInput<ReturnValue>): ReturnValue {
+    public async persist({key, fetchFn}: PersistInput<ReturnValue>): Promise<ReturnValue> {
         const value = fetchFn();
-        this.cache.set(key, this.toCacheEntry(key, value, fetchFn));
+        this.cache.set(key, await this.toCacheEntry(key, value, fetchFn));
         return value;
     };
 
-    updateValueInCache(key: string) {
+    async updateValueInCache(key: string) {
         const entry = this.cache.get(key);
         if (entry) {
-            const get = this.getValueGetter(entry.fetchFn(), key, entry.expirationTimeout);
+            const get = await this.getValueGetter(entry.fetchFn(), key, entry.expirationTimeout);
             entry.value = get;
             this.cache.set(key, entry);
         }
     }
 
-    getRefreshInterval(key: string): NodeJS.Timeout | undefined {
+    async getRefreshInterval(key: string): Promise<NodeJS.Timeout | undefined> {
         const config = this.config.autoRefresh;
 
         if (config?.type === 'PERIODICALLY') {
@@ -75,7 +75,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         return undefined;
     }
 
-    getExpirationTimeout(key: string, refreshInterval?: NodeJS.Timeout) {
+    async getExpirationTimeout(key: string, refreshInterval?: NodeJS.Timeout): Promise<NodeJS.Timeout | undefined> {
         const config = this.config.expiration;
 
         if (config) {
@@ -95,7 +95,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         return undefined;
     }
 
-    getValueGetter<ReturnValue>(value: ReturnValue, key: string, expirationTimeout?: NodeJS.Timeout) {
+    async getValueGetter<ReturnValue>(value: ReturnValue, key: string, expirationTimeout?: NodeJS.Timeout): Promise<Closure<ReturnValue>> {
         const getValue = () => {
             // trigger an update in the background if configured
             const autoRefreshConfig = this.config.autoRefresh;
@@ -113,10 +113,10 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         return getValue;
     }
 
-    toCacheEntry(key: string, value: ReturnValue, fetchFn: Closure<ReturnValue>): Entry<ReturnValue> {
-        const refreshInterval = this.getRefreshInterval(key);
-        const expirationTimeout = this.getExpirationTimeout(key, refreshInterval);
-        const get = this.getValueGetter(value, key, expirationTimeout);
+    async toCacheEntry(key: string, value: ReturnValue, fetchFn: Closure<ReturnValue>): Promise<Entry<ReturnValue>> {
+        const refreshInterval = await this.getRefreshInterval(key);
+        const expirationTimeout = await this.getExpirationTimeout(key, refreshInterval);
+        const get = await this.getValueGetter(value, key, expirationTimeout);
 
         return {
             value: get,

@@ -10,16 +10,16 @@ export type Cached<Value> = { value: Value };
 export type PersistInput<ReturnValue> = {key: string; fetchFn: Closure<ReturnValue>};
 
 export interface CacheStrategy<ReturnValue> {
-    retrieve: (key: string) => Cached<ReturnValue> | undefined;
-    persist: (input: PersistInput<ReturnValue>) => ReturnValue;
+    retrieve: (key: string) => Promise<Cached<ReturnValue> | undefined>;
+    persist: (input: PersistInput<ReturnValue>) => Promise<ReturnValue>;
 }
 
 export function cacheMe<F extends AnyFunction, P extends Parameters<F>, R extends ReturnType<F>>(fn: F, cacheStrategy: CacheStrategy<R> = inMemory(), ...eager: Array<P>) {
 
-    const func = (...params: P): R => {
+    const func = async (...params: P): Promise<R> => {
         const key = objectHash([fn.name, ...params]);
 
-        const cached = cacheStrategy.retrieve(key);
+        const cached = await cacheStrategy.retrieve(key);
 
         if(typeof cached !== 'undefined') {
             return cached.value;
@@ -27,7 +27,7 @@ export function cacheMe<F extends AnyFunction, P extends Parameters<F>, R extend
 
         const fetchFn: Closure<R> = fn.bind(params);
 
-        const value = cacheStrategy.persist({key, fetchFn});
+        const value = await cacheStrategy.persist({key, fetchFn});
         return value;
     };
 
