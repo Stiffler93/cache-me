@@ -1,4 +1,5 @@
 import { cacheMe } from '.';
+import { inMemory } from './in-memory-cache';
 
 jest.useFakeTimers();
 
@@ -38,12 +39,12 @@ test('Cached function is called once for every unique parameter', () => {
 
 test('Cache is warmed-up correctly', () => {
     const func = jest.fn((_: number) => {});
-    cacheMe(func, {}, [1], [2], [3]);
+    cacheMe(func, inMemory<void>(), [1], [2], [3]);
 
     expect(func).toBeCalledTimes(3);
 });
 
-test('Cache expires data correctly', () => {
+test('Cached values do not expire when not configured', () => {
     const func = jest.fn();
     const cachedFunction = cacheMe(func);
 
@@ -53,8 +54,24 @@ test('Cache expires data correctly', () => {
     cachedFunction();
     expect(func).toBeCalledTimes(1);
 
+    jest.advanceTimersByTime(1_000_000);
+
+    cachedFunction();
+    expect(func).toBeCalledTimes(1);
+});
+
+test('Cache expires data correctly', () => {
+    const func = jest.fn();
+    const cachedFunction = cacheMe(func, inMemory({ expiration: { ttl: 10_000, resetTTLOnRead: false } }));
+
+    expect(func).toBeCalledTimes(0);
+    cachedFunction();
+    expect(func).toBeCalledTimes(1);
+    cachedFunction();
+    expect(func).toBeCalledTimes(1);
+
     // advance timers to expire cache
-    jest.advanceTimersByTime(60_000);
+    jest.advanceTimersByTime(10_000);
 
     cachedFunction();
     expect(func).toBeCalledTimes(2);
@@ -62,7 +79,7 @@ test('Cache expires data correctly', () => {
 
 test('Cached values TTL is reset on read', () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, { expiration: { ttl: 2000, resetTTLOnRead: true } });
+    const cachedFunction = cacheMe(func, inMemory({ expiration: { ttl: 2000, resetTTLOnRead: true } }));
 
     expect(func).toBeCalledTimes(0);
     cachedFunction();
@@ -87,7 +104,7 @@ test('Cached values TTL is reset on read', () => {
 
 test('Cached values TTL is not reset on read when not configured', () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, { expiration: { ttl: 2000, resetTTLOnRead: false } });
+    const cachedFunction = cacheMe(func, inMemory({ expiration: { ttl: 2000, resetTTLOnRead: false } }));
 
     expect(func).toBeCalledTimes(0);
     cachedFunction();
@@ -104,7 +121,7 @@ test('Cached values TTL is not reset on read when not configured', () => {
 
 test('Cached values are refreshed periodically', () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, { autoRefresh: { type: 'PERIODICALLY', interval: 1000 } });
+    const cachedFunction = cacheMe(func, inMemory({ autoRefresh: { type: 'PERIODICALLY', interval: 1000 } }));
 
     expect(func).toBeCalledTimes(0);
     cachedFunction();
@@ -119,7 +136,7 @@ test('Cached values are refreshed periodically', () => {
 
 test('Periodically refreshed values in cache keep referential integrity', () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, { autoRefresh: { type: 'PERIODICALLY', interval: 1000 } });
+    const cachedFunction = cacheMe(func, inMemory({ autoRefresh: { type: 'PERIODICALLY', interval: 1000 } }));
 
     expect(func).toBeCalledTimes(0);
     const response1 = cachedFunction();
@@ -136,7 +153,7 @@ test('Periodically refreshed values in cache keep referential integrity', () => 
 
 test('Cached values update after read', () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, { autoRefresh: { type: 'AFTER_READ' } });
+    const cachedFunction = cacheMe(func, inMemory({ autoRefresh: { type: 'AFTER_READ' } }));
 
     expect(func).toBeCalledTimes(0);
     cachedFunction();
