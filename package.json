@@ -1,7 +1,7 @@
 {
-  "name": "dynamic-promise",
+  "name": "cache-me",
   "version": "1.0.0",
-  "description": "dynamic-promises is an addon to promises that allows to more conveniently cache with pre-loading and lazy-loading, and opt-in background updates and cache invalidation.",
+  "description": "cache-me removes the overhead of writing explicit logic just for caching. Instead of having to deal with imperative calls to store and load data from a cache, it allows you to use your plain old functions just the way you're used to.",
   "main": "dist/index.js",
   "type": "commonjs",
   "scripts": {
@@ -14,7 +14,7 @@
     "cache"
   ],
   "author": "Stefan Sonntag",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.5",
     "@types/node": "^20.8.0",
