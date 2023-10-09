@@ -47,7 +47,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     };
     
     public async persist({key, fetchFn}: PersistInput<ReturnValue>): Promise<ReturnValue> {
-        const value = fetchFn();
+        const value = await fetchFn();
         this.cache.set(key, await this.toCacheEntry(key, value, fetchFn));
         return value;
     };

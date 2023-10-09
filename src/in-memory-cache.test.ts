@@ -11,6 +11,30 @@ test('Cached function returns correct result', async () => {
     expect(await cachedFunction()).toBe(1);
 });
 
+test('Cached function returns correct result for async function', async () => {
+    const cachedFunction = cacheMe(async () => 1);
+
+    expect(await cachedFunction()).toBe(1);
+    expect(await cachedFunction()).toBe(1);
+    expect(await cachedFunction()).toBe(1);
+});
+
+test('Cached function returns correct result for complex async function', async () => {
+    async function complexAsyncFunction(): Promise<number> {
+        await Promise.resolve();
+        const _ = 7 + 3;
+
+        return await new Promise<number>(async (resolve) => {
+            await Promise.resolve();
+            resolve(7);
+        });
+    }
+
+    const cachedFunction = cacheMe(complexAsyncFunction);
+
+    expect(await cachedFunction()).toBe(7);
+});
+
 test('Cached function is actually only called once', async () => {
     const func = jest.fn();
     const cachedFunction = cacheMe(func);
