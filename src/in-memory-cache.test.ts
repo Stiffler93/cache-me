@@ -198,6 +198,27 @@ test('Cached values update after read', async () => {
     expect(func).toBeCalledTimes(3);
 });
 
+test('Updated values after read are correct', async () => {
+    let value = 0;
+    const func = jest.fn(async () => value++);
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<number>>({ type: 'REFRESH_AFTER_READ', cooldown: 0 }));
+
+    expect(func).toBeCalledTimes(0);
+
+    const res1 = await cachedFunction();
+    expect(func).toBeCalledTimes(1);
+    expect(res1).toBe(0);
+
+    const res2 = await cachedFunction();
+    expect(func).toBeCalledTimes(2);
+    expect(res2).toBe(0);
+
+    const res3 = await cachedFunction();
+    expect(func).toBeCalledTimes(3);
+    expect(res3).toBe(1);
+});
+
 test('Cached value\'s update is asynchronous', async () => {
     const delay = 10_000;
 
@@ -258,4 +279,72 @@ test('Cached values are updated after read after cooldown period', async () => {
 
     await cachedFunction();
     expect(func).toBeCalledTimes(2);
+});
+
+test('Cached values are updated when updateIf condition is fulfilled', async () => {
+    let value = 0;
+    const func = jest.fn(async () => value++);
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<number>>({ type: 'REFRESH_AFTER_READ', cooldown: 0, updateIf: async () => true}));
+
+    expect(func).toBeCalledTimes(0);
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(1);
+    expect(await cachedFunction()).toBe(0); // value only gets updated asynchronously after read, hence still 0
+    expect(func).toBeCalledTimes(2);
+    expect(await cachedFunction()).toBe(1);
+    expect(func).toBeCalledTimes(3);
+});
+
+test('Cached values are updated when updateIf condition is fulfilled', async () => {
+    let value = 0;
+    const func = jest.fn(async () => value++);
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<number>>({ type: 'REFRESH_AFTER_READ', cooldown: 0, updateIf: async () => false}));
+
+    expect(func).toBeCalledTimes(0);
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(1);
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(2);
+    expect(await cachedFunction()).toBe(0); // value never gets updated
+    expect(func).toBeCalledTimes(3);
+});
+
+test('Cached values are not updated when updateIf condition is not fulfilled', async () => {
+    let value = 0;
+    const func = jest.fn(async () => {
+        return value++;
+    });
+
+    async function updateIf(value: Promise<number>) {
+        return await value !== 2;
+    }
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<number>>({ type: 'REFRESH_AFTER_READ', cooldown: 0, updateIf}));
+
+    // the `await Promise.resolve();` calls are required because the background updates are not awaited and the await
+    // inside the test defers further execution of the test and allows the background task to run.
+
+    expect(func).toBeCalledTimes(0);
+
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(1);
+    await Promise.resolve();
+
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(2);
+    await Promise.resolve();
+
+    expect(await cachedFunction()).toBe(1);
+    expect(func).toBeCalledTimes(3);
+    await Promise.resolve();
+
+    expect(await cachedFunction()).toBe(1); // value was not set to 2 because of the updateIf condition
+    expect(func).toBeCalledTimes(4);
+    await Promise.resolve();
+
+    expect(await cachedFunction()).toBe(3);
+    expect(func).toBeCalledTimes(5);
+    await Promise.resolve();
 });

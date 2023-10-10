@@ -5,14 +5,14 @@ type ExpirationConfig = {
     ttl: number;
     resetTTLOnRead: boolean;
 };
-type RefreshConfig<ReturnValue> = {
+type RefreshConfig<ReturnValue> = ({
     type: 'REFRESH_PERIODICALLY';
     interval: number; // ms
 } | {
     type: 'REFRESH_AFTER_READ';
     cooldown: number; // ms
-} & {
-    updateIf?: (value: ReturnValue) => boolean;
+}) & {
+    updateIf?: (value: ReturnValue) => Promise<boolean>;
 };
 type NoConfig = {
     type: 'NO_CONFIG';
@@ -66,7 +66,16 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
                 return;
             }
 
-            const get = await this.getValueGetter(entry.fetchFn(), key, entry.expirationTimeout);
+            const value = entry.fetchFn();
+
+            if (this.config.type === 'REFRESH_PERIODICALLY' || this.config.type === 'REFRESH_AFTER_READ') {
+                const executeUpdate = this.config.updateIf ? await this.config.updateIf(value) : true;
+                if (!executeUpdate) {
+                    return;
+                }
+            }
+
+            const get = await this.getValueGetter(value, key, entry.expirationTimeout);
             entry.value = get;
             entry.modified = new Date().getTime();
             this.cache.set(key, entry);
