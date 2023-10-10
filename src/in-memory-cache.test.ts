@@ -94,7 +94,7 @@ test('Cached values do not expire when not configured', async () => {
 
 test('Cache expires data correctly', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ expiration: { ttl: 10_000, resetTTLOnRead: false } }));
+    const cachedFunction = cacheMe(func, inMemory({ type: 'EXPIRE_AFTER', ttl: 10_000, resetTTLOnRead: false }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -111,7 +111,7 @@ test('Cache expires data correctly', async () => {
 
 test('Cached values TTL is reset on read', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ expiration: { ttl: 2000, resetTTLOnRead: true } }));
+    const cachedFunction = cacheMe(func, inMemory({ type: 'EXPIRE_AFTER', ttl: 2000, resetTTLOnRead: true }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -136,7 +136,7 @@ test('Cached values TTL is reset on read', async () => {
 
 test('Cached values TTL is not reset on read when not configured', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ expiration: { ttl: 2000, resetTTLOnRead: false } }));
+    const cachedFunction = cacheMe(func, inMemory({ type: 'EXPIRE_AFTER', ttl: 2000, resetTTLOnRead: false }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -153,7 +153,7 @@ test('Cached values TTL is not reset on read when not configured', async () => {
 
 test('Cached values are refreshed periodically', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ autoRefresh: { type: 'PERIODICALLY', interval: 1000 } }));
+    const cachedFunction = cacheMe(func, inMemory({ type: 'REFRESH_PERIODICALLY', interval: 1000 }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -168,7 +168,7 @@ test('Cached values are refreshed periodically', async () => {
 
 test('Periodically refreshed values in cache keep referential integrity', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ autoRefresh: { type: 'PERIODICALLY', interval: 1000 } }));
+    const cachedFunction = cacheMe(func, inMemory({ type: 'REFRESH_PERIODICALLY', interval: 1000 }));
 
     expect(func).toBeCalledTimes(0);
     const response1 = await cachedFunction();
@@ -185,7 +185,7 @@ test('Periodically refreshed values in cache keep referential integrity', async 
 
 test('Cached values update after read', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ autoRefresh: { type: 'AFTER_READ' } }));
+    const cachedFunction = cacheMe(func, inMemory({ type: 'REFRESH_AFTER_READ', cooldown: 0 }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -196,4 +196,66 @@ test('Cached values update after read', async () => {
 
     await cachedFunction();
     expect(func).toBeCalledTimes(3);
+});
+
+test('Cached value\'s update is asynchronous', async () => {
+    const delay = 10_000;
+
+    const artificialDelay = () => new Promise(resolve => {
+        const timeout = setTimeout(resolve, delay);
+        timeout.unref();
+    });
+
+    const func = jest.fn(async () => {
+        const timeout = artificialDelay();
+        await timeout;
+        return 1;
+    });
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<number>>({ type: 'REFRESH_AFTER_READ', cooldown: 0 }));
+
+    expect(func).toBeCalledTimes(0);
+    const firstPromise = cachedFunction();
+    const secondPromise = cachedFunction();
+
+    await Promise.resolve();
+    jest.advanceTimersByTime(delay);
+
+    expect(func).toBeCalledTimes(2);
+
+    expect(firstPromise).toEqual(secondPromise);
+
+    const firstValue = await firstPromise;
+    const secondValue = await secondPromise;
+    expect(firstValue).toEqual(secondValue);
+});
+
+test('Cached values are not updated after read in cooldown period', async () => {
+    const func = jest.fn(async () => "result");
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<string>>({ type: 'REFRESH_AFTER_READ', cooldown: 5_000 }));
+
+    expect(func).toBeCalledTimes(0);
+    await cachedFunction();
+    expect(func).toBeCalledTimes(1);
+    await cachedFunction();
+    expect(func).toBeCalledTimes(1);
+});
+
+test('Cached values are updated after read after cooldown period', async () => {
+    const cooldown = 5_000;
+    const func = jest.fn(async () => "result");
+
+    const cachedFunction = cacheMe(func, inMemory<Promise<string>>({ type: 'REFRESH_AFTER_READ', cooldown }));
+
+    expect(func).toBeCalledTimes(0);
+    await cachedFunction();
+    expect(func).toBeCalledTimes(1);
+    await cachedFunction();
+    expect(func).toBeCalledTimes(1);
+
+    jest.advanceTimersByTime(cooldown);
+
+    await cachedFunction();
+    expect(func).toBeCalledTimes(2);
 });
