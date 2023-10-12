@@ -35,10 +35,14 @@ type Cache<ReturnValue> = Map<string, Entry<ReturnValue>>;
 class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     private cache: Cache<ReturnValue>;
     private config: Config<ReturnValue>;
+    private cachedValuesOrdered: Array<string>;
+    private persistCounter: number;
 
     constructor(config: Config<ReturnValue>) {
         this.cache = new Map();
         this.config = config;
+        this.cachedValuesOrdered = new Array(config.limit);
+        this.persistCounter = 0;
     }
     
     public async retrieve(key: string): Promise<Cached<ReturnValue> | undefined> {
@@ -56,6 +60,15 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     public async persist({key, fetchFn}: PersistInput<ReturnValue>): Promise<ReturnValue> {
         const value = await fetchFn();
         this.cache.set(key, await this.toCacheEntry(key, value, fetchFn));
+        if (this.config.limit) {
+            const removeKey = this.cachedValuesOrdered[this.persistCounter];
+            this.cachedValuesOrdered[this.persistCounter] = key;
+            this.persistCounter = (this.persistCounter + 1) % this.config.limit;
+            if (removeKey) {
+                this.removeValueFromCache(removeKey);
+            }
+        }
+
         return value;
     };
 
@@ -82,6 +95,17 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
             entry.value = get;
             entry.modified = new Date().getTime();
             this.cache.set(key, entry);
+        }
+    }
+
+    async removeValueFromCache(key: string) {
+        const entry = this.cache.get(key);
+        if (entry) {
+            // clean everything up so that it can be GC'd
+            entry.expirationTimeout && clearTimeout(entry.expirationTimeout);
+            entry.refreshInterval && clearInterval(entry.refreshInterval);
+
+            this.cache.delete(key);
         }
     }
 

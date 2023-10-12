@@ -366,28 +366,79 @@ test('Cached values are not updated when updateIf condition is not fulfilled', a
     await Promise.resolve();
 });
 
-// test.only('Cached values are removed FIFO when limit is reached', async () => {
-//     const func = jest.fn((value: number) => value);
-//     const cachedFunction = cacheMe(func, inMemory<number>({ type: 'DEFAULT_CONFIG', limit: 3 }));
+test('Cached values are removed FIFO when limit is reached', async () => {
+    const func = jest.fn((value: number) => value);
+    const cachedFunction = cacheMe(func, inMemory<number>({ type: 'DEFAULT_CONFIG', limit: 3 }));
 
-//     expect(func).toBeCalledTimes(0);
-//     expect(cachedFunction(1)).toBe(1);
-//     expect(func).toBeCalledTimes(1);
-//     expect(await cachedFunction(2)).toBe(2);
-//     expect(func).toBeCalledTimes(2);
-//     expect(await cachedFunction(3)).toBe(3);
-//     expect(func).toBeCalledTimes(3);
+    expect(func).toBeCalledTimes(0);
+    expect(await cachedFunction(1)).toBe(1);
+    expect(func).toBeCalledTimes(1);
+    expect(await cachedFunction(2)).toBe(2);
+    expect(func).toBeCalledTimes(2);
+    expect(await cachedFunction(3)).toBe(3);
+    expect(func).toBeCalledTimes(3);
 
-//     expect(await cachedFunction(1)).toBe(1);
-//     expect(func).toBeCalledTimes(3); // not called again because it's still cached
+    expect(await cachedFunction(1)).toBe(1);
+    expect(func).toBeCalledTimes(3); // not called again because it's still cached
 
-//     expect(await cachedFunction(4)).toBe(4);
-//     expect(func).toBeCalledTimes(4); // first cached value (1) should be removed here
+    expect(await cachedFunction(4)).toBe(4);
+    expect(func).toBeCalledTimes(4); // first cached value (1) should be removed here
 
-//     expect(await cachedFunction(1)).toBe(1);
-//     expect(func).toBeCalledTimes(5); // second cached value (2) should be removed here, now in cache 3, 4, 1
+    expect(await cachedFunction(1)).toBe(1);
+    expect(func).toBeCalledTimes(5); // second cached value (2) should be removed here, now in cache 3, 4, 1
 
-//     expect(await cachedFunction(3)).toBe(3);
-//     expect(func).toBeCalledTimes(5); // still in cache, so not called
+    expect(await cachedFunction(3)).toBe(3);
+    expect(func).toBeCalledTimes(5); // still in cache, so not called
+});
 
-// });
+test('Cached values are removed in correct order (round-robin) when limit is reached', async () => {
+    const func = jest.fn((value: number) => value);
+    const cachedFunction = cacheMe(func, inMemory<number>({ type: 'DEFAULT_CONFIG', limit: 2 }));
+
+    expect(func).toBeCalledTimes(0);
+    expect(await cachedFunction(1)).toBe(1);
+    expect(func).toBeCalledTimes(1);
+    expect(await cachedFunction(1)).toBe(1);
+    expect(func).toBeCalledTimes(1);
+
+    expect(await cachedFunction(2)).toBe(2);
+    expect(func).toBeCalledTimes(2);
+    expect(await cachedFunction(2)).toBe(2);
+    expect(func).toBeCalledTimes(2);
+
+    expect(await cachedFunction(1)).toBe(1);
+    expect(func).toBeCalledTimes(2);
+
+    expect(await cachedFunction(3)).toBe(3);
+    expect(func).toBeCalledTimes(3);
+
+    // (2) still in cache
+    expect(await cachedFunction(2)).toBe(2);
+    expect(func).toBeCalledTimes(3);
+
+    // (3) also in cache
+    expect(await cachedFunction(3)).toBe(3);
+    expect(func).toBeCalledTimes(3);
+
+    expect(await cachedFunction(4)).toBe(4);
+    expect(func).toBeCalledTimes(4);
+
+    // (3) still in cache
+    expect(await cachedFunction(3)).toBe(3);
+    expect(func).toBeCalledTimes(4);
+
+    // (4) also in cache
+    expect(await cachedFunction(4)).toBe(4);
+    expect(func).toBeCalledTimes(4);
+
+    expect(await cachedFunction(5)).toBe(5);
+    expect(func).toBeCalledTimes(5);
+
+    // (4) still in cache
+    expect(await cachedFunction(4)).toBe(4);
+    expect(func).toBeCalledTimes(5);
+
+    // (5) also in cache
+    expect(await cachedFunction(5)).toBe(5);
+    expect(func).toBeCalledTimes(5);
+});
