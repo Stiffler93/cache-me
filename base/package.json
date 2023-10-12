@@ -1,11 +1,13 @@
 {
-  "name": "cache-me",
+  "name": "@cache-me/base",
   "version": "1.0.0",
   "description": "cache-me removes the overhead of writing explicit logic just for caching. Instead of having to deal with imperative calls to store and load data from a cache, it allows you to use your plain old functions just the way you're used to.",
   "main": "dist/index.js",
+  "types": "./types/index.d.ts",
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
+    "build-types": "tsc --declaration --emitDeclarationOnly --outDir types",
     "dev": "ts-node src/index.ts",
     "test": "jest"
   },

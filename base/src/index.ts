@@ -6,7 +6,6 @@ export type TypedFunction<Params, Value> = (p: Params) => Value;
 export type Closure<Value> = () => Value;
 export type Cached<Value> = { value: Value };
 
-
 export type PersistInput<ReturnValue> = {key: string; fetchFn: Closure<ReturnValue>};
 
 export interface CacheStrategy<ReturnValue> {
@@ -38,3 +37,5 @@ export function cacheMe<F extends AnyFunction, P extends Parameters<F>, R extend
 
     return func;
 }
+
+export { inMemory } from './in-memory-cache';
