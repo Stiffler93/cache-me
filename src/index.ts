@@ -21,11 +21,11 @@ export function cacheMe<F extends AnyFunction, P extends Parameters<F>, R extend
 
         const cached = await cacheStrategy.retrieve(key);
 
-        if(typeof cached !== 'undefined') {
+        if (typeof cached !== 'undefined') {
             return cached.value;
         }
 
-        const fetchFn: Closure<R> = fn.bind(params);
+        const fetchFn: Closure<R> = () => fn(...params);
 
         const value = await cacheStrategy.persist({key, fetchFn});
         return value;

@@ -14,11 +14,14 @@ type RefreshConfig<ReturnValue> = ({
 }) & {
     updateIf?: (value: ReturnValue) => Promise<boolean>;
 };
-type NoConfig = {
-    type: 'NO_CONFIG';
+type DefaultConfig = {
+    type: 'DEFAULT_CONFIG';
 };
+type SharedConfig = {
+    limit?: number;
+}
 
-export type Config<ReturnValue> = ExpirationConfig | RefreshConfig<ReturnValue> | NoConfig;
+export type Config<ReturnValue> = (ExpirationConfig | RefreshConfig<ReturnValue> | DefaultConfig) & SharedConfig;
 
 type Entry<ReturnValue> = {
     value: () => ReturnValue;
@@ -144,6 +147,6 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     }
 }
 
-export function inMemory<ReturnValue>(config: Config<ReturnValue> = {type: 'NO_CONFIG'}): CacheStrategy<ReturnValue> {
+export function inMemory<ReturnValue>(config: Config<ReturnValue> = {type: 'DEFAULT_CONFIG'}): CacheStrategy<ReturnValue> {
     return new InMemoryCache<ReturnValue>(config);
 }

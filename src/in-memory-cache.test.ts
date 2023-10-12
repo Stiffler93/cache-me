@@ -11,12 +11,29 @@ test('Cached function returns correct result', async () => {
     expect(await cachedFunction()).toBe(1);
 });
 
-test('Cached function returns correct result for async function', async () => {
+test('Cached function with parameter returns correct result', async () => {
+    const cachedFunction = cacheMe((value: number) => value);
+
+    expect(await cachedFunction(1)).toBe(1);
+    expect(await cachedFunction(1)).toBe(1);
+    expect(await cachedFunction(2)).toBe(2);
+    expect(await cachedFunction(3)).toBe(3);
+});
+
+test('Cached async function returns correct result', async () => {
     const cachedFunction = cacheMe(async () => 1);
 
     expect(await cachedFunction()).toBe(1);
     expect(await cachedFunction()).toBe(1);
     expect(await cachedFunction()).toBe(1);
+});
+
+test('Cached async function with parameter returns correct result', async () => {
+    const cachedFunction = cacheMe(async (str: string) => `${str}_yes`);
+
+    expect(await cachedFunction('haha')).toBe('haha_yes');
+    expect(await cachedFunction('bt2')).toBe('bt2_yes');
+    expect(await cachedFunction('')).toBe('_yes');
 });
 
 test('Cached function returns correct result for complex async function', async () => {
@@ -348,3 +365,29 @@ test('Cached values are not updated when updateIf condition is not fulfilled', a
     expect(func).toBeCalledTimes(5);
     await Promise.resolve();
 });
+
+// test.only('Cached values are removed FIFO when limit is reached', async () => {
+//     const func = jest.fn((value: number) => value);
+//     const cachedFunction = cacheMe(func, inMemory<number>({ type: 'DEFAULT_CONFIG', limit: 3 }));
+
+//     expect(func).toBeCalledTimes(0);
+//     expect(cachedFunction(1)).toBe(1);
+//     expect(func).toBeCalledTimes(1);
+//     expect(await cachedFunction(2)).toBe(2);
+//     expect(func).toBeCalledTimes(2);
+//     expect(await cachedFunction(3)).toBe(3);
+//     expect(func).toBeCalledTimes(3);
+
+//     expect(await cachedFunction(1)).toBe(1);
+//     expect(func).toBeCalledTimes(3); // not called again because it's still cached
+
+//     expect(await cachedFunction(4)).toBe(4);
+//     expect(func).toBeCalledTimes(4); // first cached value (1) should be removed here
+
+//     expect(await cachedFunction(1)).toBe(1);
+//     expect(func).toBeCalledTimes(5); // second cached value (2) should be removed here, now in cache 3, 4, 1
+
+//     expect(await cachedFunction(3)).toBe(3);
+//     expect(func).toBeCalledTimes(5); // still in cache, so not called
+
+// });
