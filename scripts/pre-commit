@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "Linting code..."
+
+git stash -q --keep-index
+
+npm run lint
+
+status=$?
+
+git stash pop -q
+
+exit $status
