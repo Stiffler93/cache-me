@@ -12,6 +12,7 @@
   "author": "Stefan Sonntag <sonntag19@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@types/jest": "^29.5.5",
     "@typescript-eslint/eslint-plugin": "^6.7.5",
     "eslint": "^8.51.0",
     "eslint-config-standard-with-typescript": "^39.1.1",
