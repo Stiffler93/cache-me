@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "baseUrl": "./",
+        "declaration": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": false,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "paths": {
+            "src/*": ["./src/*"]
+        },
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "es2020"
+    },
+    "exclude": [
+        "**/*.test.ts",
+        "**/node_modules/",
+        "**/dist/"
+    ]
+}

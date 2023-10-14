@@ -1,18 +1,6 @@
 {
-  "compilerOptions": {
-    "baseUrl": "./",
-    "isolatedModules": false,
-    "module": "commonjs",
-    "outDir": "./dist",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
-    "strict": true,
-    "target": "es2020",
-    "paths": {
-      "src/*": [
-        "./src/*"
-      ]
-    }
-  }
+    "compilerOptions": {
+        "outDir": "dist",
+    },
+    "extends": "../tsconfig.json"
 }
