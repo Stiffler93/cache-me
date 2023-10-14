@@ -1,9 +1,16 @@
 {
   "name": "cache-me",
   "version": "1.0.0",
-  "description": "",
+  "description": "Root for cache-me packages.",
+  "workspaces": [
+    "base",
+    "redis"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces",
+    "test": "npm test --workspaces"
   },
   "repository": {
     "type": "git",

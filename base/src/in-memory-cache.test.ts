@@ -111,10 +111,7 @@ test('Cached values do not expire when not configured', async () => {
 
 test('Cache expires data correctly', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(
-        func,
-        inMemory({ ttl: 10_000 })
-    );
+    const cachedFunction = cacheMe(func, inMemory({ ttl: 10_000 }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -159,10 +156,7 @@ test('Cached values TTL is reset on read', async () => {
 
 test('Cached values TTL is not reset on read when not configured', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(
-        func,
-        inMemory({ ttl: 2000 })
-    );
+    const cachedFunction = cacheMe(func, inMemory({ ttl: 2000 }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -217,10 +211,7 @@ test('Periodically refreshed values in cache keep referential integrity', async 
 
 test('Cached values update after read', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(
-        func,
-        inMemory({ refreshAfterRead: true })
-    );
+    const cachedFunction = cacheMe(func, inMemory({ refreshAfterRead: true }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -420,10 +411,7 @@ test('Cached values are not updated when updateIf condition is not fulfilled', a
 
 test('Cached values are removed FIFO when limit is reached', async () => {
     const func = jest.fn((value: number) => value);
-    const cachedFunction = cacheMe(
-        func,
-        inMemory<number>({ limit: 3 })
-    );
+    const cachedFunction = cacheMe(func, inMemory<number>({ limit: 3 }));
 
     expect(func).toBeCalledTimes(0);
     expect(await cachedFunction(1)).toBe(1);
@@ -448,10 +436,7 @@ test('Cached values are removed FIFO when limit is reached', async () => {
 
 test('Cached values are removed in correct order (round-robin) when limit is reached', async () => {
     const func = jest.fn((value: number) => value);
-    const cachedFunction = cacheMe(
-        func,
-        inMemory<number>({ limit: 2 })
-    );
+    const cachedFunction = cacheMe(func, inMemory<number>({ limit: 2 }));
 
     expect(func).toBeCalledTimes(0);
     expect(await cachedFunction(1)).toBe(1);
