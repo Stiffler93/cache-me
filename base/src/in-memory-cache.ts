@@ -1,35 +1,14 @@
 import { CacheStrategy, Cached, Closure, PersistInput } from '.';
 
-type ExpirationConfig = {
-    type: 'EXPIRE_AFTER';
+export type Config<ReturnValue> = Partial<{
     ttl: number;
     resetTTLOnRead: boolean;
-};
-type RefreshConfig<ReturnValue> = (
-    | {
-          type: 'REFRESH_PERIODICALLY';
-          interval: number; // ms
-      }
-    | {
-          type: 'REFRESH_AFTER_READ';
-          cooldown: number; // ms
-      }
-) & {
-    updateIf?: (value: ReturnValue) => Promise<boolean>;
-};
-type DefaultConfig = {
-    type: 'DEFAULT_CONFIG';
-};
-type SharedConfig = {
-    limit?: number;
-};
-
-export type Config<ReturnValue> = (
-    | ExpirationConfig
-    | RefreshConfig<ReturnValue>
-    | DefaultConfig
-) &
-    SharedConfig;
+    refreshIntervalInMs: number;
+    refreshAfterRead: boolean;
+    cooldownInMs: number;
+    limit: number;
+    updateIf: (value: ReturnValue) => Promise<boolean>;
+}>;
 
 type Entry<ReturnValue> = {
     value: () => ReturnValue;
@@ -97,13 +76,8 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
 
             const value = entry.fetchFn();
 
-            if (
-                this.config.type === 'REFRESH_PERIODICALLY' ||
-                this.config.type === 'REFRESH_AFTER_READ'
-            ) {
-                const executeUpdate = this.config.updateIf
-                    ? await this.config.updateIf(value)
-                    : true;
+            if (this.config.updateIf) {
+                const executeUpdate = await this.config.updateIf(value);
                 if (!executeUpdate) {
                     return;
                 }
@@ -132,10 +106,10 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     }
 
     async getRefreshInterval(key: string): Promise<NodeJS.Timeout | undefined> {
-        if (this.config.type === 'REFRESH_PERIODICALLY') {
+        if (this.config.refreshIntervalInMs) {
             const refreshInterval = setInterval(() => {
                 this.updateValueInCache(key);
-            }, this.config.interval);
+            }, this.config.refreshIntervalInMs);
             refreshInterval.unref();
             return refreshInterval;
         }
@@ -147,7 +121,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         key: string,
         refreshInterval?: NodeJS.Timeout
     ): Promise<NodeJS.Timeout | undefined> {
-        if (this.config.type === 'EXPIRE_AFTER') {
+        if (this.config.ttl) {
             const expirationTimeout = setTimeout(() => {
                 // clean everything up so that it can be GC'd
                 if (refreshInterval) {
@@ -171,14 +145,11 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     ): Promise<Closure<ReturnValue>> {
         const getValue = () => {
             // trigger an update in the background if configured
-            if (this.config.type === 'REFRESH_AFTER_READ') {
-                this.updateValueInCache(key, this.config.cooldown);
+            if (this.config.refreshAfterRead) {
+                this.updateValueInCache(key, this.config.cooldownInMs);
             }
 
-            if (
-                this.config.type === 'EXPIRE_AFTER' &&
-                this.config.resetTTLOnRead
-            ) {
+            if (this.config.resetTTLOnRead) {
                 expirationTimeout?.refresh();
             }
 
@@ -211,7 +182,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
 }
 
 export function inMemory<ReturnValue>(
-    config: Config<ReturnValue> = { type: 'DEFAULT_CONFIG' }
+    config: Config<ReturnValue> = {}
 ): CacheStrategy<ReturnValue> {
     return new InMemoryCache<ReturnValue>(config);
 }
