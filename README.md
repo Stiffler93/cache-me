@@ -19,13 +19,36 @@ const response = await cachedAnyFunction('abc');
 
 It's as simple as that and now `cachedAnyFunction` is a perfect replacement for `anyFunction` with internal caching.
 
-## Caching
+## Caching strategies
 
-By default results are cached in memory (RAM). So far, only in-memory caching is supported, but other caching strategies will be supported in the future. Support for caching with Redis is currently in the works.
+* [In Memory](./base/README.md) _(default)_
+* [Redis](./redis/README.md) _(soon to be released)_
 
-You can also write your own caching strategy by creating a class that implements the `CacheStrategy<ReturnValue>` interface exported by `@cache-me/base`.
+### Write custom caching strategies
 
-### In memory cache
+Writing a caching strategy is simple. Create a class that implements the `CacheStrategy<ReturnValue>` interface exported by `@cache-me/base`. Then you can pass an instance of the class into the `cacheMe` function.
 
-This is the default strategy which stores cached values indefinitely in RAM.
+**Example:**
 
+```typescript
+class MyCustomCache<ReturnValue> implements CacheStrategy<ReturnValue> {
+    public async retrieve(key: string): Promise<Cached<ReturnValue> | undefined> {
+        // your logic here
+        // retrieve value by `key`
+        return value;
+    }
+    public async persist({ key, fetchFn }: PersistInput<ReturnValue>): Promise<ReturnValue> {
+        const value = await fetchFn();
+        // your logic here
+        // persist value by `key`
+        return value;
+    }
+}
+
+export function inMyCustomCache<ReturnValue>(): CacheStrategy<ReturnValue> {
+    return new MyCustomCache<ReturnValue>();
+}
+
+// USAGE:
+cacheMe(function, inMyCustomCache());
+```
