@@ -50,6 +50,7 @@ test('Cached function returns correct result for complex async function', async 
     const cachedFunction = cacheMe(complexAsyncFunction);
 
     expect(await cachedFunction()).toBe(7);
+    expect(await cachedFunction()).toBe(7);
 });
 
 test('Cached function is actually only called once', async () => {

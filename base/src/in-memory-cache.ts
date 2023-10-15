@@ -1,4 +1,5 @@
 import { CacheStrategy, Cached, Closure, PersistInput } from '.';
+import { log } from './logger';
 
 export type Config<ReturnValue> = Partial<{
     ttl: number;
@@ -35,13 +36,17 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     public async retrieve(
         key: string
     ): Promise<Cached<ReturnValue> | undefined> {
+        log('Retrieve cached value.');
         const entry = this.cache.get(key);
 
         if (entry) {
+            log('Value found in cache.');
             return {
                 value: entry.value(),
             };
         }
+
+        log('Value not found in cache.');
 
         return undefined;
     }
@@ -50,13 +55,17 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         key,
         fetchFn,
     }: PersistInput<ReturnValue>): Promise<ReturnValue> {
+        log('Persist value in cache.');
         const value = await fetchFn();
 
         if (this.config.cacheWhen) {
+            log('Evaluate `cachedWhen` condition.');
             const executeInsert = await this.config.cacheWhen(value);
             if (!executeInsert) {
+                log('`cachedWhen` is not fullfilled -> do not cache value.');
                 return value;
             }
+            log('`cachedWhen` is fullfilled -> cache value.');
         }
 
         await this.insertValueIntoCache(key, value, fetchFn);
@@ -69,34 +78,44 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         value: ReturnValue,
         fetchFn: Closure<ReturnValue>
     ) {
+        log('Insert value into cache.');
         this.cache.set(key, await this.toCacheEntry(key, value, fetchFn));
+
         if (this.config.limit) {
+            log(`Evaluate configured \`limit\` of ${this.config.limit}`);
             const removeKey = this.cachedValuesOrdered[this.persistCounter];
             this.cachedValuesOrdered[this.persistCounter] = key;
             this.persistCounter = (this.persistCounter + 1) % this.config.limit;
             if (removeKey) {
+                log('`limit` was hit.');
                 this.removeValueFromCache(removeKey);
             }
         }
     }
 
     async updateValueInCache(key: string, cooldown: number = 0) {
+        log('Update value in cache.');
         const entry = this.cache.get(key);
         if (entry) {
+            log('Cached value was found.');
             const currentTime = new Date().getTime();
             const inCooldown = entry.modified + cooldown > currentTime;
 
             if (inCooldown) {
+                log('Cached value is still in `cooldown` period -> do not update value.');
                 return;
             }
 
             const value = entry.fetchFn();
 
             if (this.config.cacheWhen) {
+                log('Evaluate `cachedWhen` condition.');
                 const executeUpdate = await this.config.cacheWhen(value);
                 if (!executeUpdate) {
+                    log('`cachedWhen` is not fullfilled -> do not update value.');
                     return;
                 }
+                log('`cachedWhen` is fullfilled -> update value.');
             }
 
             const get = await this.getValueGetter(
@@ -111,6 +130,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     }
 
     async removeValueFromCache(key: string) {
+        log('Remove value from cache');
         const entry = this.cache.get(key);
         if (entry) {
             // clean everything up so that it can be GC'd

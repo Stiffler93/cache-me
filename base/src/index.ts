@@ -1,5 +1,6 @@
 import objectHash from 'object-hash';
 import { inMemory } from './in-memory-cache';
+import { log } from './logger';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type AnyFunction = (...p: any[]) => any;
@@ -21,18 +22,24 @@ export function cacheMe<F extends AnyFunction>(
     cacheStrategy: CacheStrategy<ReturnType<F>> = inMemory(),
     ...eager: Array<Parameters<F>>
 ) {
+    log(`Set up cache for '${fn.name}'.`);
+
     const func = async (...params: Parameters<F>): Promise<ReturnType<F>> => {
+        log(`Call cached '${fn.name}(${params})'.`);
         const key = objectHash([fn.name, ...params]);
 
         const cached = await cacheStrategy.retrieve(key);
 
         if (typeof cached !== 'undefined') {
+            log(`'${fn.name}(${params})' retrieved from cache.`)
             return cached.value;
         }
 
         const fetchFn: Closure<ReturnType<F>> = () => fn(...params);
 
         const value = await cacheStrategy.persist({ key, fetchFn });
+        log(`'${fn.name}(${params})' persisted in cache.`)
+
         return value;
     };
 
