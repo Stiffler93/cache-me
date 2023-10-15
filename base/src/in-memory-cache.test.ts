@@ -112,7 +112,7 @@ test('Cached values do not expire when not configured', async () => {
 
 test('Cache expires data correctly', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ ttl: 10_000 }));
+    const cachedFunction = cacheMe(func, inMemory({ ttlInMs: 10_000 }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();
@@ -131,7 +131,7 @@ test('Cached values TTL is reset on read', async () => {
     const func = jest.fn();
     const cachedFunction = cacheMe(
         func,
-        inMemory({ ttl: 2000, resetTTLOnRead: true })
+        inMemory({ ttlInMs: 2000, resetTTLOnRead: true })
     );
 
     expect(func).toBeCalledTimes(0);
@@ -157,7 +157,7 @@ test('Cached values TTL is reset on read', async () => {
 
 test('Cached values TTL is not reset on read when not configured', async () => {
     const func = jest.fn();
-    const cachedFunction = cacheMe(func, inMemory({ ttl: 2000 }));
+    const cachedFunction = cacheMe(func, inMemory({ ttlInMs: 2000 }));
 
     expect(func).toBeCalledTimes(0);
     await cachedFunction();

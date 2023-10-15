@@ -2,7 +2,7 @@ import { CacheStrategy, Cached, Closure, PersistInput } from '.';
 import { log } from './logger';
 
 export type Config<ReturnValue> = Partial<{
-    ttl: number;
+    ttlInMs: number;
     resetTTLOnRead: boolean;
     refreshIntervalInMs: number;
     refreshAfterRead: boolean;
@@ -157,14 +157,14 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         key: string,
         refreshInterval?: NodeJS.Timeout
     ): Promise<NodeJS.Timeout | undefined> {
-        if (this.config.ttl) {
+        if (this.config.ttlInMs) {
             const expirationTimeout = setTimeout(() => {
                 // clean everything up so that it can be GC'd
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
                 }
                 this.cache.delete(key);
-            }, this.config.ttl);
+            }, this.config.ttlInMs);
 
             expirationTimeout.unref();
 
