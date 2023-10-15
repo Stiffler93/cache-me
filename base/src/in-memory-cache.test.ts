@@ -80,7 +80,7 @@ test('Cached function is called once for every unique parameter', async () => {
 
 test('Cache is warmed-up correctly', async () => {
     const func = jest.fn();
-    cacheMe(func, inMemory<void>(), [1], [2], [3]);
+    cacheMe(func, inMemory(), [1], [2], [3]);
 
     // cache is warmed up asynchronously as tasks further down in event queue
     expect(func).toBeCalledTimes(0);
@@ -228,10 +228,7 @@ test('Updated values after read are correct', async () => {
     let value = 0;
     const func = jest.fn(async () => value++);
 
-    const cachedFunction = cacheMe(
-        func,
-        inMemory<Promise<number>>({ refreshAfterRead: true })
-    );
+    const cachedFunction = cacheMe(func, inMemory({ refreshAfterRead: true }));
 
     expect(func).toBeCalledTimes(0);
 
@@ -263,10 +260,7 @@ test("Cached value's update is asynchronous", async () => {
         return 1;
     });
 
-    const cachedFunction = cacheMe(
-        func,
-        inMemory<Promise<number>>({ refreshAfterRead: true })
-    );
+    const cachedFunction = cacheMe(func, inMemory({ refreshAfterRead: true }));
 
     expect(func).toBeCalledTimes(0);
     const firstPromise = cachedFunction();
@@ -289,7 +283,7 @@ test('Cached values are not updated after read in cooldown period', async () => 
 
     const cachedFunction = cacheMe(
         func,
-        inMemory<Promise<string>>({
+        inMemory({
             refreshAfterRead: true,
             cooldownInMs: 5_000,
         })
@@ -308,7 +302,7 @@ test('Cached values are updated after read after cooldown period', async () => {
 
     const cachedFunction = cacheMe(
         func,
-        inMemory<Promise<string>>({ refreshAfterRead: true, cooldownInMs })
+        inMemory({ refreshAfterRead: true, cooldownInMs })
     );
 
     expect(func).toBeCalledTimes(0);
@@ -329,7 +323,7 @@ test('Cached values are updated when updateIf condition is fulfilled', async () 
 
     const cachedFunction = cacheMe(
         func,
-        inMemory<Promise<number>>({
+        inMemory({
             refreshAfterRead: true,
             updateIf: async () => true,
         })
@@ -350,7 +344,7 @@ test('Cached values are updated when updateIf condition is fulfilled', async () 
 
     const cachedFunction = cacheMe(
         func,
-        inMemory<Promise<number>>({
+        inMemory({
             refreshAfterRead: true,
             updateIf: async () => false,
         })
@@ -377,7 +371,7 @@ test('Cached values are not updated when updateIf condition is not fulfilled', a
 
     const cachedFunction = cacheMe(
         func,
-        inMemory<Promise<number>>({
+        inMemory({
             refreshAfterRead: true,
             updateIf,
         })
@@ -411,7 +405,7 @@ test('Cached values are not updated when updateIf condition is not fulfilled', a
 
 test('Cached values are removed FIFO when limit is reached', async () => {
     const func = jest.fn((value: number) => value);
-    const cachedFunction = cacheMe(func, inMemory<number>({ limit: 3 }));
+    const cachedFunction = cacheMe(func, inMemory({ limit: 3 }));
 
     expect(func).toBeCalledTimes(0);
     expect(await cachedFunction(1)).toBe(1);
@@ -436,7 +430,7 @@ test('Cached values are removed FIFO when limit is reached', async () => {
 
 test('Cached values are removed in correct order (round-robin) when limit is reached', async () => {
     const func = jest.fn((value: number) => value);
-    const cachedFunction = cacheMe(func, inMemory<number>({ limit: 2 }));
+    const cachedFunction = cacheMe(func, inMemory({ limit: 2 }));
 
     expect(func).toBeCalledTimes(0);
     expect(await cachedFunction(1)).toBe(1);
