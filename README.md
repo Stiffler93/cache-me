@@ -52,3 +52,7 @@ export function inMyCustomCache<ReturnValue>(): CacheStrategy<ReturnValue> {
 // USAGE:
 cacheMe(function, inMyCustomCache());
 ```
+
+## How to debug
+
+Does something not quite work as expected? Set the `NODE_DEBUG` environment variable to enable the packages debug statements. If you want to enable it only for a particular package, use the package name (e.g. `NODE_DEBUG=@cache-me/base`). To enable it for all packages use `NODE_DEBUG=@cache-me`.
