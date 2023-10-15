@@ -102,7 +102,9 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
             const inCooldown = entry.modified + cooldown > currentTime;
 
             if (inCooldown) {
-                log('Cached value is still in `cooldown` period -> do not update value.');
+                log(
+                    'Cached value is still in `cooldown` period -> do not update value.'
+                );
                 return;
             }
 
@@ -112,7 +114,9 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
                 log('Evaluate `cachedWhen` condition.');
                 const executeUpdate = await this.config.cacheWhen(value);
                 if (!executeUpdate) {
-                    log('`cachedWhen` is not fullfilled -> do not update value.');
+                    log(
+                        '`cachedWhen` is not fullfilled -> do not update value.'
+                    );
                     return;
                 }
                 log('`cachedWhen` is fullfilled -> update value.');

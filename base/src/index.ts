@@ -31,14 +31,14 @@ export function cacheMe<F extends AnyFunction>(
         const cached = await cacheStrategy.retrieve(key);
 
         if (typeof cached !== 'undefined') {
-            log(`'${fn.name}(${params})' retrieved from cache.`)
+            log(`'${fn.name}(${params})' retrieved from cache.`);
             return cached.value;
         }
 
         const fetchFn: Closure<ReturnType<F>> = () => fn(...params);
 
         const value = await cacheStrategy.persist({ key, fetchFn });
-        log(`'${fn.name}(${params})' persisted in cache.`)
+        log(`'${fn.name}(${params})' persisted in cache.`);
 
         return value;
     };
