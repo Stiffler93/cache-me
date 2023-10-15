@@ -317,7 +317,7 @@ test('Cached values are updated after read after cooldown period', async () => {
     expect(func).toBeCalledTimes(2);
 });
 
-test('Cached values are updated when updateIf condition is fulfilled', async () => {
+test('Cached values are updated when cacheWhen condition is fulfilled', async () => {
     let value = 0;
     const func = jest.fn(async () => value++);
 
@@ -325,7 +325,7 @@ test('Cached values are updated when updateIf condition is fulfilled', async () 
         func,
         inMemory({
             refreshAfterRead: true,
-            updateIf: async () => true,
+            cacheWhen: async () => true,
         })
     );
 
@@ -338,7 +338,7 @@ test('Cached values are updated when updateIf condition is fulfilled', async () 
     expect(func).toBeCalledTimes(3);
 });
 
-test('Cached values are updated when updateIf condition is fulfilled', async () => {
+test('Values are not cached when cacheWhen condition is not fulfilled', async () => {
     let value = 0;
     const func = jest.fn(async () => value++);
 
@@ -346,26 +346,60 @@ test('Cached values are updated when updateIf condition is fulfilled', async () 
         func,
         inMemory({
             refreshAfterRead: true,
-            updateIf: async () => false,
+            cacheWhen: async () => false,
         })
     );
 
     expect(func).toBeCalledTimes(0);
     expect(await cachedFunction()).toBe(0);
     expect(func).toBeCalledTimes(1);
-    expect(await cachedFunction()).toBe(0);
+    expect(await cachedFunction()).toBe(1);
     expect(func).toBeCalledTimes(2);
-    expect(await cachedFunction()).toBe(0); // value never gets updated
+    expect(await cachedFunction()).toBe(2);
     expect(func).toBeCalledTimes(3);
 });
 
-test('Cached values are not updated when updateIf condition is not fulfilled', async () => {
+test('Cached values are updated when cacheWhen condition is fulfilled', async () => {
+    let value = 0;
+    const func = jest.fn(async () => value++);
+
+    const cachedFunction = cacheMe(
+        func,
+        inMemory({
+            refreshAfterRead: true,
+            cacheWhen: async (value) => {
+                const v = await value;
+                return v === 0 || v === 3;
+            },
+        })
+    );
+
+    expect(func).toBeCalledTimes(0);
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(1);
+    expect(await cachedFunction()).toBe(0); // value does not get updated because not 0
+    expect(func).toBeCalledTimes(2);
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(3);
+    expect(await cachedFunction()).toBe(0);
+    expect(func).toBeCalledTimes(4);
+
+    // required to ensure the cache is updated by the time we call the function again
+    await Promise.resolve();
+
+    expect(await cachedFunction()).toBe(3); // value got updated after previous read
+    expect(func).toBeCalledTimes(5);
+    expect(await cachedFunction()).toBe(3); // value stays 3 now
+    expect(func).toBeCalledTimes(6);
+});
+
+test('Cached values are not updated when cacheWhen condition is not fulfilled', async () => {
     let value = 0;
     const func = jest.fn(async () => {
         return value++;
     });
 
-    async function updateIf(value: Promise<number>) {
+    async function cacheWhen(value: Promise<number>) {
         return (await value) !== 2;
     }
 
@@ -373,7 +407,7 @@ test('Cached values are not updated when updateIf condition is not fulfilled', a
         func,
         inMemory({
             refreshAfterRead: true,
-            updateIf,
+            cacheWhen,
         })
     );
 

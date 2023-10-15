@@ -7,7 +7,7 @@ export type Config<ReturnValue> = Partial<{
     refreshAfterRead: boolean;
     cooldownInMs: number;
     limit: number;
-    updateIf: (value: ReturnValue) => Promise<boolean>;
+    cacheWhen: (value: ReturnValue) => Promise<boolean>;
 }>;
 
 type Entry<ReturnValue> = {
@@ -51,6 +51,24 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         fetchFn,
     }: PersistInput<ReturnValue>): Promise<ReturnValue> {
         const value = await fetchFn();
+
+        if (this.config.cacheWhen) {
+            const executeInsert = await this.config.cacheWhen(value);
+            if (!executeInsert) {
+                return value;
+            }
+        }
+
+        await this.insertValueIntoCache(key, value, fetchFn);
+
+        return value;
+    }
+
+    async insertValueIntoCache(
+        key: string,
+        value: ReturnValue,
+        fetchFn: Closure<ReturnValue>
+    ) {
         this.cache.set(key, await this.toCacheEntry(key, value, fetchFn));
         if (this.config.limit) {
             const removeKey = this.cachedValuesOrdered[this.persistCounter];
@@ -60,8 +78,6 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
                 this.removeValueFromCache(removeKey);
             }
         }
-
-        return value;
     }
 
     async updateValueInCache(key: string, cooldown: number = 0) {
@@ -76,8 +92,8 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
 
             const value = entry.fetchFn();
 
-            if (this.config.updateIf) {
-                const executeUpdate = await this.config.updateIf(value);
+            if (this.config.cacheWhen) {
+                const executeUpdate = await this.config.cacheWhen(value);
                 if (!executeUpdate) {
                     return;
                 }
