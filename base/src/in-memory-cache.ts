@@ -11,14 +11,101 @@ export type Config<ReturnValue> = Partial<{
     cacheWhen: (value: ReturnValue) => Promise<boolean>;
 }>;
 
-type Entry<ReturnValue> = {
-    value: () => ReturnValue;
-    fetchFn: Closure<ReturnValue>;
-    expirationTimeout?: NodeJS.Timeout;
-    refreshInterval?: NodeJS.Timeout;
-    modified: number;
-};
 type Cache<ReturnValue> = Map<string, Entry<ReturnValue>>;
+
+class Entry<ReturnValue> {
+    private key: string;
+    private value: ReturnValue;
+    private fetchFn: Closure<ReturnValue>;
+    private cache: Cache<ReturnValue>;
+    private config: Config<ReturnValue>;
+    private expirationTimeout?: NodeJS.Timeout;
+    private refreshInterval?: NodeJS.Timeout;
+    private modified: number;
+
+    constructor(
+        key: string,
+        value: ReturnValue,
+        fetchFn: Closure<ReturnValue>,
+        cache: Cache<ReturnValue>,
+        config: Config<ReturnValue>
+    ) {
+        this.key = key;
+        this.value = value;
+        this.fetchFn = fetchFn;
+        this.cache = cache;
+        this.config = config;
+
+        this.setupExpirationTimeout();
+        this.setupRefreshInterval();
+
+        this.modified = new Date().getTime();
+    }
+
+    public delete() {
+        log('Delete value from cache');
+        this.refreshInterval && clearInterval(this.refreshInterval);
+        this.expirationTimeout && clearTimeout(this.expirationTimeout);
+        this.cache.delete(this.key);
+    }
+
+    async refresh() {
+        const currentTime = new Date().getTime();
+        const inCooldown =
+            this.modified + (this.config.cooldownInMs || 0) > currentTime;
+
+        if (inCooldown) {
+            log(
+                'Cached value is still in `cooldown` period -> do not update value.'
+            );
+            return;
+        }
+
+        const value = await this.fetchFn();
+
+        if (this.config.cacheWhen) {
+            log('Evaluate `cachedWhen` condition.');
+            const executeUpdate = await this.config.cacheWhen(value);
+            if (!executeUpdate) {
+                log('`cachedWhen` is not fullfilled -> do not update value.');
+                return;
+            }
+            log('`cachedWhen` is fullfilled -> update value.');
+        }
+
+        this.value = value;
+        this.modified = new Date().getTime();
+    }
+
+    setupRefreshInterval() {
+        if (this.config.refreshIntervalInMs) {
+            this.refreshInterval = setInterval(() => {
+                this.refresh();
+            }, this.config.refreshIntervalInMs);
+            this.refreshInterval.unref();
+        }
+    }
+
+    setupExpirationTimeout() {
+        if (this.config.ttlInMs) {
+            this.expirationTimeout = setTimeout(
+                () => this.delete(),
+                this.config.ttlInMs
+            );
+        }
+    }
+
+    getValue(): ReturnValue {
+        if (this.config.refreshAfterRead) {
+            this.refresh();
+        }
+        if (this.config.resetTTLOnRead) {
+            this.expirationTimeout?.refresh();
+        }
+
+        return this.value;
+    }
+}
 
 class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     private cache: Cache<ReturnValue>;
@@ -42,7 +129,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
         if (entry) {
             log('Value found in cache.');
             return {
-                value: entry.value(),
+                value: entry.getValue(),
             };
         }
 
@@ -68,18 +155,11 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
             log('`cachedWhen` is fullfilled -> cache value.');
         }
 
-        await this.insertValueIntoCache(key, value, fetchFn);
-
-        return value;
-    }
-
-    async insertValueIntoCache(
-        key: string,
-        value: ReturnValue,
-        fetchFn: Closure<ReturnValue>
-    ) {
         log('Insert value into cache.');
-        this.cache.set(key, await this.toCacheEntry(key, value, fetchFn));
+        this.cache.set(
+            key,
+            new Entry(key, value, fetchFn, this.cache, this.config)
+        );
 
         if (this.config.limit) {
             log(`Evaluate configured \`limit\` of ${this.config.limit}`);
@@ -88,136 +168,12 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
             this.persistCounter = (this.persistCounter + 1) % this.config.limit;
             if (removeKey) {
                 log('`limit` was hit.');
-                this.removeValueFromCache(removeKey);
+                const entry = this.cache.get(removeKey);
+                entry && entry.delete();
             }
         }
-    }
 
-    async updateValueInCache(key: string, cooldown: number = 0) {
-        log('Update value in cache.');
-        const entry = this.cache.get(key);
-        if (entry) {
-            log('Cached value was found.');
-            const currentTime = new Date().getTime();
-            const inCooldown = entry.modified + cooldown > currentTime;
-
-            if (inCooldown) {
-                log(
-                    'Cached value is still in `cooldown` period -> do not update value.'
-                );
-                return;
-            }
-
-            const value = entry.fetchFn();
-
-            if (this.config.cacheWhen) {
-                log('Evaluate `cachedWhen` condition.');
-                const executeUpdate = await this.config.cacheWhen(value);
-                if (!executeUpdate) {
-                    log(
-                        '`cachedWhen` is not fullfilled -> do not update value.'
-                    );
-                    return;
-                }
-                log('`cachedWhen` is fullfilled -> update value.');
-            }
-
-            const get = await this.getValueGetter(
-                value,
-                key,
-                entry.expirationTimeout
-            );
-            entry.value = get;
-            entry.modified = new Date().getTime();
-            this.cache.set(key, entry);
-        }
-    }
-
-    async removeValueFromCache(key: string) {
-        log('Remove value from cache');
-        const entry = this.cache.get(key);
-        if (entry) {
-            // clean everything up so that it can be GC'd
-            entry.expirationTimeout && clearTimeout(entry.expirationTimeout);
-            entry.refreshInterval && clearInterval(entry.refreshInterval);
-
-            this.cache.delete(key);
-        }
-    }
-
-    async getRefreshInterval(key: string): Promise<NodeJS.Timeout | undefined> {
-        if (this.config.refreshIntervalInMs) {
-            const refreshInterval = setInterval(() => {
-                this.updateValueInCache(key);
-            }, this.config.refreshIntervalInMs);
-            refreshInterval.unref();
-            return refreshInterval;
-        }
-
-        return undefined;
-    }
-
-    async getExpirationTimeout(
-        key: string,
-        refreshInterval?: NodeJS.Timeout
-    ): Promise<NodeJS.Timeout | undefined> {
-        if (this.config.ttlInMs) {
-            const expirationTimeout = setTimeout(() => {
-                // clean everything up so that it can be GC'd
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                }
-                this.cache.delete(key);
-            }, this.config.ttlInMs);
-
-            expirationTimeout.unref();
-
-            return expirationTimeout;
-        }
-
-        return undefined;
-    }
-
-    async getValueGetter<ReturnValue>(
-        value: ReturnValue,
-        key: string,
-        expirationTimeout?: NodeJS.Timeout
-    ): Promise<Closure<ReturnValue>> {
-        const getValue = () => {
-            // trigger an update in the background if configured
-            if (this.config.refreshAfterRead) {
-                this.updateValueInCache(key, this.config.cooldownInMs);
-            }
-
-            if (this.config.resetTTLOnRead) {
-                expirationTimeout?.refresh();
-            }
-
-            return value;
-        };
-
-        return getValue;
-    }
-
-    async toCacheEntry(
-        key: string,
-        value: ReturnValue,
-        fetchFn: Closure<ReturnValue>
-    ): Promise<Entry<ReturnValue>> {
-        const refreshInterval = await this.getRefreshInterval(key);
-        const expirationTimeout = await this.getExpirationTimeout(
-            key,
-            refreshInterval
-        );
-        const get = await this.getValueGetter(value, key, expirationTimeout);
-
-        return {
-            value: get,
-            fetchFn,
-            expirationTimeout,
-            refreshInterval: refreshInterval,
-            modified: new Date().getTime(),
-        };
+        return value;
     }
 }
 
