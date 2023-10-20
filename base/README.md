@@ -2,6 +2,8 @@
 
 This is the base package that you need to include to use caching of functions with any arbitrary caching strategy. This package provides in memory caching out of the box, which is also the default.
 
+You can find more information around the @cache-me packages in the official [Github repository](https://github.com/Stiffler93/cache-me#readme).
+
 ## In memory cache
 
 This is the default strategy which stores cached values in RAM. It's configurable, offering different means of cache invalidation, value refreshment, limits for cache size and more.

@@ -1,6 +1,6 @@
 {
     "name": "@cache-me/base",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "cache-me removes the overhead of writing explicit logic just for caching. Instead of having to deal with imperative calls to store and load data from a cache, it allows you to use your plain old functions just the way you're used to.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -16,8 +16,13 @@
     },
     "keywords": [
         "promises",
-        "cache"
+        "cache",
+        "functions"
     ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Stiffler93/cache-me.git"
+    },
     "author": "Stefan Sonntag <sonntag19@gmail.com>",
     "license": "MIT",
     "devDependencies": {
