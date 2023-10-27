@@ -122,15 +122,14 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
 
     public async retrieve(
         key: string
-    ): Promise<Cached<ReturnValue> | undefined> {
+    ): Promise<Cached<Awaited<ReturnValue>> | undefined> {
         log('Retrieve cached value.');
         const entry = this.cache.get(key);
 
         if (entry) {
             log('Value found in cache.');
-            return {
-                value: entry.getValue(),
-            };
+            const value = await entry.getValue();
+            return { value };
         }
 
         log('Value not found in cache.');
@@ -141,7 +140,7 @@ class InMemoryCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     public async persist({
         key,
         fetchFn,
-    }: PersistInput<ReturnValue>): Promise<ReturnValue> {
+    }: PersistInput<ReturnValue>): Promise<Awaited<ReturnValue>> {
         log('Persist value in cache.');
         const value = await fetchFn();
 

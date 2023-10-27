@@ -13,8 +13,12 @@ export type PersistInput<ReturnValue> = {
     fetchFn: Closure<ReturnValue>;
 };
 export interface CacheStrategy<ReturnValue> {
-    retrieve: (key: string) => Promise<Cached<ReturnValue> | undefined>;
-    persist: (input: PersistInput<ReturnValue>) => Promise<ReturnValue>;
+    retrieve: (
+        key: string
+    ) => Promise<Cached<Awaited<ReturnValue>> | undefined>;
+    persist: (
+        input: PersistInput<ReturnValue>
+    ) => Promise<Awaited<ReturnValue>>;
 }
 
 export function cacheMe<F extends AnyFunction>(
