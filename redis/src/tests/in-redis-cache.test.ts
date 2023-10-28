@@ -15,6 +15,11 @@ beforeEach(async () => {
     redis.flushall();
 });
 
+// it seems ioredis-mock does not support jest timer advancement
+function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 test('Strings are correctly cached', async () => {
     const value = 'value';
     const func = jest.fn(async () => value);
@@ -157,11 +162,6 @@ test('Values are correctly expired when ttlInMs is set', async () => {
 
     expect(await cachedFunction()).toBe(value);
     expect(func).toBeCalledTimes(1);
-
-    // it seems ioredis-mock does not support jest timer advancement
-    function sleep(ms: number) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    }
 
     await sleep(5);
 
