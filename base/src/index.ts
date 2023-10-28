@@ -2,6 +2,9 @@ import objectHash from 'object-hash';
 import { inMemory } from './in-memory-cache';
 import { log } from './logger';
 
+// TODO: restrict return value of function. We cannot deal with functions
+// as return values.
+
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type AnyFunction = (...p: any[]) => any;
 export type TypedFunction<Params, Value> = (p: Params) => Value;
