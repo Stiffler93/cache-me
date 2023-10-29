@@ -21,20 +21,33 @@ describe('Works with Redis stable version', () => {
     }, 60_000);
 
     beforeEach(async () => {
+        console.log('beforeEach');
         host = await redisServer.getHost();
         port = await redisServer.getPort();
 
+        console.log({ host, port });
+
         await redisServer.ensureInstance();
+
+        console.log('create Redis client:');
         redisClient = new Redis({ host, port });
+        console.log('Redis client created');
     }, 60_000);
 
     afterEach(async () => {
+        console.log('afterEach');
+
         // disconnect and stop Redis server & client after every test
         // and start each test with a clean state
         if (redisClient) {
+            console.log('disconnect redis client');
             redisClient.disconnect();
+            console.log('redis client disconnected');
         }
+
+        console.log('stop Redis server:');
         await redisServer.stop();
+        console.log('Redis server stopped');
     }, 60_000);
 
     test('Caching works correctly', async () => {
