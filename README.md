@@ -22,7 +22,7 @@ It's as simple as that and now `cachedAnyFunction` is a perfect replacement for 
 ## Caching strategies
 
 * [In Memory](./base/README.md) _(default)_
-* [Redis](./redis/README.md) _(soon to be released)_
+* [Redis](./redis/README.md)
 
 ### Write custom caching strategies
 

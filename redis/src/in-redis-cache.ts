@@ -2,15 +2,11 @@ import { CacheStrategy, Cached, PersistInput } from '@cache-me/base';
 import { RedisCommander } from 'ioredis';
 import { log } from './logger';
 
-type ConnectionConfig = {
+export type Config<ReturnValue> = {
     redis: RedisCommander;
+    ttlInMs?: number;
+    cacheWhen?: (value: ReturnValue) => Promise<boolean>;
 };
-
-export type Config<ReturnValue> = ConnectionConfig &
-    Partial<{
-        ttlInMs: number;
-        cacheWhen: (value: ReturnValue) => Promise<boolean>;
-    }>;
 class InRedisCache<ReturnValue> implements CacheStrategy<ReturnValue> {
     private redis: RedisCommander;
     private config: Config<ReturnValue>;
