@@ -18,7 +18,7 @@ describe('Works with Redis stable version', () => {
 
     beforeAll(() => {
         redisServer = new RedisMemoryServer();
-    });
+    }, 60_000);
 
     beforeEach(async () => {
         host = await redisServer.getHost();
@@ -26,7 +26,7 @@ describe('Works with Redis stable version', () => {
 
         await redisServer.ensureInstance();
         redisClient = new Redis({ host, port });
-    });
+    }, 60_000);
 
     afterEach(async () => {
         // disconnect and stop Redis server & client after every test
@@ -35,7 +35,7 @@ describe('Works with Redis stable version', () => {
             redisClient.disconnect();
         }
         await redisServer.stop();
-    });
+    }, 60_000);
 
     test('Caching works correctly', async () => {
         const func = jest.fn(async () => 'value');
