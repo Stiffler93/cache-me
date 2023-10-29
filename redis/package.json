@@ -1,8 +1,9 @@
 {
     "name": "@cache-me/redis",
     "version": "1.0.0",
-    "description": "An addition to @cach-me/base that adds support for Redis.",
+    "description": "An add-on to @cach-me/base that adds support for Redis.",
     "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "type": "commonjs",
     "files": [
         "dist/**/*"
@@ -14,10 +15,17 @@
         "test": "jest --detectOpenHandles"
     },
     "keywords": [
+        "promises",
         "cache",
-        "redis"
+        "functions",
+        "redis",
+        "@cache-me"
     ],
-    "author": "Stefan Sonntag",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Stiffler93/cache-me.git"
+    },
+    "author": "Stefan Sonntag <sonntag19@gmail.com>",
     "license": "MIT",
     "devDependencies": {
         "@types/node": "^20.8.0",

@@ -1,7 +1,7 @@
 {
     "name": "@cache-me/base",
-    "version": "1.0.1",
-    "description": "cache-me removes the overhead of writing explicit logic just for caching. Instead of having to deal with imperative calls to store and load data from a cache, it allows you to use your plain old functions just the way you're used to.",
+    "version": "1.0.2",
+    "description": "Caching just got a lot simpler. Just wrap the function you want to cache with this library and you're set :)",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "commonjs",
@@ -17,7 +17,9 @@
     "keywords": [
         "promises",
         "cache",
-        "functions"
+        "functions",
+        "ram",
+        "@cache-me"
     ],
     "repository": {
         "type": "git",
