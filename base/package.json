@@ -1,6 +1,6 @@
 {
     "name": "@cache-me/base",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Caching just got a lot simpler. Just wrap the function you want to cache with this library and you're set :)",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
