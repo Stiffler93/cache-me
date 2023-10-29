@@ -11,7 +11,7 @@
         "build": "tsc",
         "lint": "eslint -c ../.eslintrc.json --ext .ts .",
         "format": "prettier --ignore-path ../.prettierignore --write \"**/*.+(ts|json)\"",
-        "test": "jest --detectOpenHandles"
+        "test": "jest --detectOpenHandles --runInBand --forceExit"
     },
     "keywords": [
         "cache",
